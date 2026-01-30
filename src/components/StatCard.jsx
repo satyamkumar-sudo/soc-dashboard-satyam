@@ -56,7 +56,7 @@ const StatCard = ({
 
       <div className="mb-2">
         <div className={`text-3xl font-bold ${colors.text}`}>
-          {value.toLocaleString()}
+          {value?.toLocaleString()}
         </div>
       </div>
 

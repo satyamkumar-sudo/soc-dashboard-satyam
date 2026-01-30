@@ -2,41 +2,19 @@ import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const NetworkTrafficChart = ({ logs }) => {
-  const data = useMemo(() => {
-    const hourlyData = {};
-    const now = new Date();
-    
-    // Initialize last 24 hours
-    for (let i = 23; i >= 0; i--) {
-      const hour = new Date(now - i * 60 * 60 * 1000);
-      const key = hour.getHours();
-      hourlyData[key] = {
-        hour: `${String(key).padStart(2, '0')}:00`,
-        inbound: 0,
-        outbound: 0,
-        blocked: 0,
-        total: 0
-      };
-    }
-    
-    // Process logs
-    logs.forEach(log => {
-      const hour = new Date(log.timestamp).getHours();
-      if (hourlyData[hour]) {
-        // Simulate different traffic types
-        if (log.type === 'login_failure') {
-          hourlyData[hour].blocked += 1;
-        } else if (log.type === 'login_success') {
-          hourlyData[hour].inbound += 1;
-        } else if (log.type === 'iam_change') {
-          hourlyData[hour].outbound += 1;
-        }
-        hourlyData[hour].total += 1;
-      }
-    });
-    
-    return Object.values(hourlyData);
-  }, [logs]);
+   const data = useMemo(() => {
+  return logs.timeline.map(item => {
+    const hour = new Date(item.timestamp).getHours();
+    return {
+      hour: `${String(hour).padStart(2, '0')}:00`,
+      inbound: Number(item.failed_logins || 0),
+      outbound: Number(item.iam_changes || 0),
+      blocked: Number(item.critical_events || 0),
+      total: Number(item.failed_logins || 0) + Number(item.iam_changes || 0) + Number(item.critical_events || 0)
+    };
+  });
+}, [logs]);
+
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {

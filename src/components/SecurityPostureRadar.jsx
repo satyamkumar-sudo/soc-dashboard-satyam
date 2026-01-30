@@ -2,57 +2,21 @@ import React, { useMemo } from 'react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Shield, TrendingUp, TrendingDown } from 'lucide-react';
 
-const SecurityPostureRadar = ({ anomalies, logs, iamChanges }) => {
+const SecurityPostureRadar = ({ securityPosture }) => {
+  // Map categories to radar chart data
   const data = useMemo(() => {
-    // Calculate security metrics (0-100 scale)
-    const totalLogs = logs.length;
-    const failedLogins = logs.filter(l => l.type === 'login_failure').length;
-    const criticalThreats = anomalies.filter(a => a.severity === 'critical').length;
-    const totalThreats = anomalies.length;
-    
-    // Higher is better for these metrics
-    const calculateScore = (metric, inverse = false) => {
-      const score = inverse ? 100 - metric : metric;
-      return Math.max(0, Math.min(100, score));
-    };
-    
+    const categories = securityPosture.categories;
     return [
-      {
-        metric: 'Authentication',
-        score: calculateScore(((totalLogs - failedLogins) / totalLogs) * 100),
-        fullMark: 100,
-      },
-      {
-        metric: 'Access Control',
-        score: calculateScore(Math.max(0, 100 - (iamChanges.length * 5))),
-        fullMark: 100,
-      },
-      {
-        metric: 'Threat Detection',
-        score: calculateScore(anomalies.length > 0 ? 85 : 95), // Having anomalies detected is good
-        fullMark: 100,
-      },
-      {
-        metric: 'Incident Response',
-        score: calculateScore(100 - (criticalThreats * 10), true),
-        fullMark: 100,
-      },
-      {
-        metric: 'Network Security',
-        score: calculateScore(Math.max(0, 100 - (totalThreats * 3))),
-        fullMark: 100,
-      },
-      {
-        metric: 'Compliance',
-        score: calculateScore(Math.random() * 20 + 75), // Mock compliance score
-        fullMark: 100,
-      },
+      { metric: 'Authentication', score: categories.authentication, fullMark: 100 },
+      { metric: 'Access Control', score: categories.accessControl, fullMark: 100 },
+      { metric: 'Threat Detection', score: categories.threatDetection, fullMark: 100 },
+      { metric: 'Incident Response', score: categories.incidentResponse, fullMark: 100 },
+      { metric: 'Network Security', score: categories.networkSecurity, fullMark: 100 },
+      { metric: 'Compliance', score: categories.compliance, fullMark: 100 },
     ];
-  }, [anomalies, logs, iamChanges]);
+  }, [securityPosture]);
 
-  const averageScore = useMemo(() => {
-    return Math.round(data.reduce((sum, item) => sum + item.score, 0) / data.length);
-  }, [data]);
+  const averageScore = useMemo(() => securityPosture.overallScore, [securityPosture]);
 
   const getScoreColor = (score) => {
     if (score >= 80) return 'text-green-500';
@@ -68,17 +32,17 @@ const SecurityPostureRadar = ({ anomalies, logs, iamChanges }) => {
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const item = payload[0].payload;
       return (
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-lg">
-          <p className="text-slate-300 font-semibold mb-1">{data.metric}</p>
+          <p className="text-slate-300 font-semibold mb-1">{item.metric}</p>
           <p className="text-sm">
-            Score: <span className={`font-bold ${getScoreColor(data.score)}`}>
-              {data.score.toFixed(1)}
-            </span> / {data.fullMark}
+            Score: <span className={`font-bold ${getScoreColor(item.score)}`}>
+              {item.score.toFixed(1)}
+            </span> / {item.fullMark}
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            Status: {getScoreLabel(data.score)}
+            Status: {getScoreLabel(item.score)}
           </p>
         </div>
       );

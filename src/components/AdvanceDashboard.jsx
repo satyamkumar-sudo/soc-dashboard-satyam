@@ -10,6 +10,8 @@ import {
   Calendar,
   ToggleRight,
   ToggleLeft,
+  Bot,
+  X,
 } from "lucide-react";
 import AnomalyTable from "./AnomalyTable";
 import TimelineChart from "./TimelineChart";
@@ -27,25 +29,40 @@ import FurySankey from "./FurySankey";
 import { data } from "../data/apiData";
 import NotificationBell from "./NotificationBell";
 import NotificationTray from "./NotificaitonTray";
+import AIChatAgentWithData from "./AIChatAgentWithData";
 
 function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
   const [trayOpen, setTrayOpen] = useState(false);
-  const [logs, setLogs] = useState([]);
-  const [anomalies, setAnomalies] = useState([]);
-  const [iamChanges, setIamChanges] = useState([]);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  //   const [logs, setLogs] = useState([]);
+  //   const [anomalies, setAnomalies] = useState([]);
+  //   const [iamChanges, setIamChanges] = useState([]);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("24h");
   const [severityFilter, setSeverityFilter] = useState("all");
-  console.log(anomalies, "an");
-  console.log(data, "data");
+  console.log(data.logs, "data");
+  const {
+    logs,
+    anomalies,
+    iamChanges,
+    threatDistribution,
+    topAttackSources,
+    securityPosture,
+    networkTraffic,
+    attackPatternHeatmap,
+    networkFlow,
+    stats,
+    securityEventsTimeline
+  } = data;
+
   useEffect(() => {
     setTimeout(() => {
       const mockLogs = data?.logs;
-      setLogs(mockLogs);
+      //   setLogs(mockLogs);
       const detected = data;
-      setAnomalies(detected.anomalies);
-      setIamChanges(detected.iamChanges);
+      //   setAnomalies(detected.anomalies);
+      //   setIamChanges(detected.iamChanges);
 
       setLoading(false);
     }, 1500);
@@ -79,7 +96,7 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
           sourceIp: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
           confidence: 75 + Math.floor(Math.random() * 20),
         };
-        setAnomalies((prev) => [newAnomaly, ...prev]);
+        // setAnomalies((prev) => [newAnomaly, ...prev]);
       }
     }, 5000);
 
@@ -91,32 +108,6 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
     if (severityFilter === "all") return anomalies;
     return anomalies.filter((a) => a.severity === severityFilter);
   }, [anomalies, severityFilter]);
-
-  // Calculate advanced stats
-  const stats = useMemo(() => {
-    const now = new Date();
-    const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
-    const oneHourAgo = new Date(now - 60 * 60 * 1000);
-
-    const recentLogs = logs.filter((l) => new Date(l.timestamp) > oneDayAgo);
-    const veryRecentLogs = logs.filter(
-      (l) => new Date(l.timestamp) > oneHourAgo,
-    );
-
-    return {
-      activeThreats: anomalies.filter((a) => a.severity === "critical").length,
-      failedLogins: recentLogs.filter((l) => l.type === "login_failure").length,
-      iamChanges: iamChanges.length,
-      suspiciousIps: new Set(anomalies.map((a) => a.sourceIp)).size,
-      eventsPerHour: veryRecentLogs.length,
-      threatTrend:
-        anomalies.length > 10
-          ? "up"
-          : anomalies.length > 5
-            ? "neutral"
-            : "down",
-    };
-  }, [logs, anomalies, iamChanges]);
 
   if (loading) {
     return (
@@ -137,7 +128,7 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       {/* Header */}
-      <header className="bg-slate-900/50 border-b border-slate-800 sticky top-0 z-50">
+      <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -157,13 +148,28 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* AI Chat Button */}
+              <button
+                onClick={() => setAiChatOpen(!aiChatOpen)}
+                className={`relative flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                  aiChatOpen
+                    ? "bg-gradient-to-r from-blue-500 to-purple-600 border-blue-500 text-white"
+                    : "bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300"
+                }`}
+              >
+                <Bot className="w-5 h-5" />
+                <span className="text-sm font-medium">AI Assistant</span>
+                {aiChatOpen && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                )}
+              </button>
+
               <NotificationBell onClick={() => setTrayOpen(true)} />
               <NotificationTray
                 open={trayOpen}
                 onClose={() => setTrayOpen(false)}
               />
 
-              {/* <div className="fixed top-4 right-4 z-100"> */}
               <button
                 onClick={toggleDashboard}
                 className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg border border-slate-700 shadow-lg transition-all"
@@ -180,7 +186,7 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
                   </>
                 )}
               </button>
-              {/* </div> */}
+
               {/* Time range selector */}
               <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-1 border border-slate-700">
                 <button
@@ -227,23 +233,47 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
         </div>
       </header>
 
+      {/* AI Chat Panel Overlay */}
+      {aiChatOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-4xl h-[80vh] m-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            {/* Close button */}
+            <button
+              onClick={() => setAiChatOpen(false)}
+              className="absolute -top-12 right-0 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg border border-slate-700 transition-all"
+            >
+              <X className="w-4 h-4" />
+              <span className="text-sm">Close</span>
+            </button>
+
+            {/* Chat component */}
+            <AIChatAgentWithData 
+              networkFlow={networkFlow} 
+              logs={logs} 
+            />
+          </div>
+        </div>
+      )}
+
       <div className="p-6">
         {/* KPI Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <StatCard
             title="Critical Threats"
-            value={stats.activeThreats}
+            value={stats.criticalThreats}
             icon={<AlertTriangle className="w-6 h-6" />}
             color="red"
-            trend={stats.activeThreats > 2 ? "up" : "down"}
+            trend={stats.criticalThreats > 1000 ? "up" : "down"}
           />
+
           <StatCard
             title="Failed Logins"
             value={stats.failedLogins}
             icon={<Users className="w-6 h-6" />}
             color="yellow"
-            trend="up"
+            trend={stats.failedLogins > 100 ? "up" : "down"}
           />
+
           <StatCard
             title="IAM Changes"
             value={stats.iamChanges}
@@ -251,15 +281,17 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
             color="blue"
             trend="neutral"
           />
+
           <StatCard
             title="Attack Sources"
-            value={stats.suspiciousIps}
+            value={stats.attackSources}
             icon={<Globe className="w-6 h-6" />}
             color="orange"
-            trend="up"
+            trend={stats.attackSources > 1 ? "up" : "neutral"}
           />
+
           <StatCard
-            title="Events/Hour"
+            title="Events / Hour"
             value={stats.eventsPerHour}
             icon={<Activity className="w-6 h-6" />}
             color="blue"
@@ -302,10 +334,11 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-bold mb-4">Network Flow Visualization</h2>
-          <D3SankeyDiagram logs={logs} />
+          <D3SankeyDiagram networkFlow={networkFlow} />
         </div>
+
         {/* Advanced Analytics Grid - Top Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Network Traffic Analysis */}
@@ -314,7 +347,7 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
               <TrendingUp className="w-5 h-5 text-blue-500" />
               Network Traffic Analysis
             </h2>
-            <NetworkTrafficChart logs={logs} />
+            <NetworkTrafficChart logs={networkTraffic} />
           </div>
 
           {/* Security Posture */}
@@ -325,7 +358,7 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
             </h2>
             <SecurityPostureRadar
               anomalies={anomalies}
-              logs={logs}
+              securityPosture={securityPosture}
               iamChanges={iamChanges}
             />
           </div>
@@ -336,19 +369,19 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
           {/* Timeline */}
           <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4">Security Events Timeline</h2>
-            <TimelineChart logs={logs} />
+            <TimelineChart logs={securityEventsTimeline} />
           </div>
 
           {/* Threat Distribution */}
           <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4">Threat Distribution</h2>
-            <ThreatPieChart anomalies={anomalies} />
+            <ThreatPieChart threatDistribution={threatDistribution} />
           </div>
 
           {/* Top Attackers */}
           <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
             <h2 className="text-lg font-bold mb-4">Top Attack Sources</h2>
-            <TopAttackersChart anomalies={anomalies} logs={logs} />
+            <TopAttackersChart topAttackSources={topAttackSources} />
           </div>
         </div>
 
@@ -360,7 +393,7 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
               <Calendar className="w-5 h-5 text-orange-500" />
               Attack Pattern Heatmap
             </h2>
-            <AttackHeatmap logs={logs} />
+            <AttackHeatmap heatmap={attackPatternHeatmap} />
           </div>
 
           {/* Live Event Stream */}

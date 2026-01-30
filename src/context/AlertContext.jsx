@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { notifyAlert } from "../utils/alertNotifier";
-import { data as mockData } from "../data/apiData";
+
+import { notifications as mockData } from "../data/notifications";
 
 const AlertContext = createContext();
 
@@ -9,7 +10,7 @@ export const AlertProvider = ({ children }) => {
   const [unread, setUnread] = useState(0);
 
   const loadAlerts = async () => {
-    const notifications = mockData.notifications?.alerts;
+    const notifications = mockData?.alerts;
     setAlerts(notifications);
     setUnread(notifications.filter(a => a.status === "open").length);
   };
@@ -18,7 +19,7 @@ export const AlertProvider = ({ children }) => {
     loadAlerts();
 
     const interval = setInterval(() => {
-      const notifications = mockData.notifications?.alerts;
+      const notifications = mockData?.alerts;
 
       setAlerts(prevAlerts => {
         // detect new alerts

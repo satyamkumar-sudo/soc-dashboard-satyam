@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import { sankey as d3Sankey, sankeyLinkHorizontal } from 'd3-sankey';
+import { mockLogs as logs } from '../data/apiData';
 
-const D3SankeyDiagram = ({ logs }) => {
+const D3SankeyDiagram = () => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
   // Helper functions

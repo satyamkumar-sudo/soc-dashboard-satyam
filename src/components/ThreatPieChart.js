@@ -1,52 +1,53 @@
-import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import React, { useMemo } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
 
-const ThreatPieChart = ({ anomalies }) => {
-  // Process anomalies by severity
-  const processData = () => {
-    const severityCounts = {
-      critical: 0,
-      medium: 0,
-      low: 0
-    };
+const COLOR_MAP = {
+  critical: "#ef4444",
+  high: "#b91c1c",
+  medium: "#f59e0b",
+  low: "#10b981",
+  default: "#6b7280",
+};
 
-    anomalies.forEach(anomaly => {
-      if (severityCounts.hasOwnProperty(anomaly.severity)) {
-        severityCounts[anomaly.severity]++;
-      }
-    });
+const ThreatPieChart = ({ threatDistribution = {} }) => {
+  const data = useMemo(() => {
+    return Object.entries(threatDistribution)
+      .map(([key, value]) => ({
+        name: key.charAt(0).toUpperCase() + key.slice(1),
+        value: Number(value),
+        fill: COLOR_MAP[key.toLowerCase()] || COLOR_MAP.default,
+      }))
+      .filter(d => d.value > 0);
+  }, [threatDistribution]);
 
-    return [
-      { name: 'Critical', value: severityCounts.critical, color: '#ef4444' },
-      { name: 'Medium', value: severityCounts.medium, color: '#f59e0b' },
-      { name: 'Low', value: severityCounts.low, color: '#10b981' }
-    ].filter(item => item.value > 0); // Only show non-zero values
-  };
-
-  const data = processData();
+  const totalThreats = data.reduce((sum, d) => sum + d.value, 0);
 
   const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-lg">
-          <p className="text-slate-300 font-semibold mb-1">{payload[0].name}</p>
-          <p className="text-sm" style={{ color: payload[0].payload.color }}>
-            Count: {payload[0].value}
-          </p>
-          <p className="text-slate-400 text-xs mt-1">
-            {((payload[0].value / anomalies.length) * 100).toFixed(1)}% of total
-          </p>
-        </div>
-      );
-    }
-    return null;
+    if (!active || !payload?.length) return null;
+
+    const { name, value, fill } = payload[0].payload;
+
+    return (
+      <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-lg">
+        <p className="text-slate-300 font-semibold">{name}</p>
+        <p className="text-sm font-bold" style={{ color: fill }}>
+          Count: {value}
+        </p>
+        <p className="text-xs text-slate-400">
+          {((value / totalThreats) * 100).toFixed(1)}% of total
+        </p>
+      </div>
+    );
   };
 
-  const renderLabel = (entry) => {
-    return `${entry.name}: ${entry.value}`;
-  };
-
-  if (data.length === 0) {
+  if (!data.length) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
         <div className="text-center text-slate-400">
@@ -60,42 +61,47 @@ const ThreatPieChart = ({ anomalies }) => {
 
   return (
     <div className="w-full h-64">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer>
         <PieChart>
           <Pie
             data={data}
+            dataKey="value"
+            nameKey="name"
             cx="50%"
             cy="50%"
-            labelLine={false}
-            label={renderLabel}
             outerRadius={80}
-            fill="#8884d8"
-            dataKey="value"
-            animationBegin={0}
-            animationDuration={800}
+            innerRadius={45}
+            paddingAngle={3}
+            isAnimationActive
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
+              <Cell key={`cell-${index}`} fill={entry.fill} />
             ))}
           </Pie>
+
           <Tooltip content={<CustomTooltip />} />
-          <Legend 
-            wrapperStyle={{ fontSize: '14px' }}
+
+          <Legend
             iconType="circle"
+            formatter={(value, entry) => (
+              <span style={{ color: entry.color || entry.payload.fill }}>
+                {value}
+              </span>
+            )}
           />
         </PieChart>
       </ResponsiveContainer>
-      
-      {/* Stats below chart */}
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        {data.map((item, index) => (
-          <div 
-            key={index}
+
+      {/* Stats */}
+      <div className="mt-4 grid grid-cols-4 gap-3">
+        {data.map((item, idx) => (
+          <div
+            key={idx}
             className="text-center p-2 rounded-lg bg-slate-800/50 border border-slate-700/50"
           >
-            <div 
+            <div
               className="text-2xl font-bold mb-1"
-              style={{ color: item.color }}
+              style={{ color: item.fill }}
             >
               {item.value}
             </div>

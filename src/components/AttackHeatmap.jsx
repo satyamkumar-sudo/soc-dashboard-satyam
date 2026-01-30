@@ -1,30 +1,19 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 
-const AttackHeatmap = ({ logs }) => {
-  const heatmapData = useMemo(() => {
-    // Create 24-hour x 7-day grid
-    const grid = Array(7).fill(null).map(() => Array(24).fill(0));
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    // Count failed logins and anomalies per hour/day
-    logs.forEach(log => {
-      if (log.type === 'login_failure' || log.type === 'anomaly') {
-        const date = new Date(log.timestamp);
-        const day = date.getDay();
-        const hour = date.getHours();
-        grid[day][hour]++;
-      }
-    });
-    
-    // Find max for normalization
-    const max = Math.max(...grid.flat());
-    
-    return { grid, max, days };
-  }, [logs]);
+const AttackHeatmap = ({ heatmap }) => {
+  if (!heatmap?.data || heatmap.data.length === 0) {
+    return (
+      <div className="w-full h-64 flex items-center justify-center text-slate-400">
+        No attack pattern data
+      </div>
+    );
+  }
+
+  const { data: grid, days, maxValue } = heatmap;
 
   const getColor = (value) => {
     if (value === 0) return 'bg-slate-800/30';
-    const intensity = value / heatmapData.max;
+    const intensity = value / maxValue;
     if (intensity > 0.8) return 'bg-red-500';
     if (intensity > 0.6) return 'bg-orange-500';
     if (intensity > 0.4) return 'bg-yellow-500';
@@ -33,11 +22,12 @@ const AttackHeatmap = ({ logs }) => {
   };
 
   const getTooltipText = (day, hour, value) => {
-    return `${heatmapData.days[day]} ${hour}:00 - ${value} events`;
+    return `${days[day] || 'Day'} ${hour}:00 - ${value} events`;
   };
 
   return (
     <div className="w-full">
+      {/* Legend */}
       <div className="flex gap-2 mb-4">
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <div className="w-3 h-3 bg-slate-800/30 rounded"></div>
@@ -56,7 +46,7 @@ const AttackHeatmap = ({ logs }) => {
           <span>High</span>
         </div>
       </div>
-      
+
       <div className="overflow-x-auto">
         <div className="inline-flex flex-col gap-1 min-w-max">
           {/* Hour labels */}
@@ -67,13 +57,16 @@ const AttackHeatmap = ({ logs }) => {
               </div>
             ))}
           </div>
-          
+
           {/* Heatmap grid */}
-          {heatmapData.grid.map((row, dayIndex) => (
+          {grid.map((row, dayIndex) => (
             <div key={dayIndex} className="flex items-center gap-1">
+              {/* Day label */}
               <div className="w-10 text-xs text-slate-400 font-medium">
-                {heatmapData.days[dayIndex]}
+                {days[dayIndex] || `Day ${dayIndex}`}
               </div>
+
+              {/* Cells */}
               <div className="flex gap-1">
                 {row.map((value, hourIndex) => (
                   <div
@@ -91,7 +84,7 @@ const AttackHeatmap = ({ logs }) => {
           ))}
         </div>
       </div>
-      
+
       <div className="mt-4 text-xs text-slate-500">
         <p>Activity pattern over the last 7 days • Darker colors indicate higher attack volume</p>
       </div>
