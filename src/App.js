@@ -4,12 +4,14 @@ import AdvancedDashboard from "./components/AdvanceDashboard";
 import Dashboard from "./components/Dashboard";
 import { unlockAudio } from "./utils/audioManager";
 import { AlertProvider } from "./context/AlertContext";
-import { notifyAlert } from "./utils/alertNotifier";
 
+// const DASHBOARD_API =
+//   "https://192.168.50.236:8443/ui/mock-data?hours=24&log_limit=50&anomaly_limit=15&iam_changes_limit=10";
 const DASHBOARD_API =
-  "https://192.168.50.236:8443/ui/mock-data?hours=24&log_limit=50&anomaly_limit=15&iam_changes_limit=10";
+  "https://localhost:8443/ui/soc-dashboard?hours=1";
 
-const ALERTS_API = "http://localhost:8088/api/alerts";
+const NETWORK_FLOW_API =
+  "https://localhost:8443/ui/network-flow?hours=1&top_ips=10";
 
 const POLL_INTERVAL = 60_000; // 1 minute
 
@@ -19,56 +21,71 @@ function App() {
   // ✅ SINGLE OBJECT for dashboard
   const [dashboardData, setDashboardData] = useState({});
 
-  // useEffect(() => {
-  //   let isMounted = true;
+  useEffect(() => {
+    let isMounted = true;
 
-  //   // 🔥 DASHBOARD DATA FETCH
-  //   const fetchDashboardData = async () => {
-  //     try {
-  //       const res = await fetch(DASHBOARD_API);
-  //       const data = await res.json();
+    // 🔥 DASHBOARD DATA FETCH
+    const fetchDashboardData = async () => {
+      try {
+        const [dashboardRes, networkFlowRes] = await Promise.all([
+          fetch(DASHBOARD_API),
+          fetch(NETWORK_FLOW_API),
+        ]);
 
-  //       if (isMounted) {
-  //         setDashboardData(data);
-  //       }
-  //     } catch (err) {
-  //       console.error("Dashboard API error:", err);
-  //     }
-  //   };
+        const dashboardJson = await dashboardRes.json();
+        // normalize common API response wrappers
+        const dashboardData =
+          dashboardJson?.data ??
+          dashboardJson?.result ??
+          dashboardJson?.dashboard ??
+          dashboardJson?.payload ??
+          dashboardJson;
 
-  //   // 🔔 ALERTS FETCH (notifications)
-  //   const fetchAlerts = async () => {
-  //     try {
-  //       const res = await fetch(ALERTS_API);
-  //       const alerts = await res.json();
+        const networkFlowJson = await networkFlowRes.json();
+        const networkFlowData =
+          networkFlowJson?.data ??
+          networkFlowJson?.result ??
+          networkFlowJson?.networkFlow ??
+          networkFlowJson?.payload ??
+          networkFlowJson;
 
-  //       // expecting alerts as array
-  //       alerts?.forEach((alert) => {
-  //         notifyAlert({
-  //           title: alert.title || alert.message || "New Alert",
-  //           severity: alert.severity || "medium",
-  //         });
-  //       });
-  //     } catch (err) {
-  //       console.error("Alerts API error:", err);
-  //     }
-  //   };
+        const sankeyInput =
+          networkFlowData?.sankeyData ??
+          networkFlowData?.data?.sankeyData ??
+          networkFlowData;
 
-  //   // initial fetch
-  //   fetchDashboardData();
-  //   fetchAlerts();
+        const merged =
+          dashboardData && typeof dashboardData === "object"
+            ? {
+                ...dashboardData,
+                networkFlow: sankeyInput,
+              }
+            : {
+                networkFlow: sankeyInput,
+              };
 
-  //   // polling
-  //   const intervalId = setInterval(() => {
-  //     fetchDashboardData();
-  //     fetchAlerts();
-  //   }, POLL_INTERVAL);
+        console.log(merged, "data");
+        if (isMounted) {
+          setDashboardData(merged);
+        }
+      } catch (err) {
+        console.error("Dashboard API error:", err);
+      }
+    };
 
-  //   return () => {
-  //     isMounted = false;
-  //     clearInterval(intervalId);
-  //   };
-  // }, []);
+    // initial fetch
+    fetchDashboardData();
+
+    // polling
+    const intervalId = setInterval(() => {
+      fetchDashboardData();
+    }, POLL_INTERVAL);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, []);
 
   const toggleDashboard = () => {
     setIsAdvanced((prev) => !prev);

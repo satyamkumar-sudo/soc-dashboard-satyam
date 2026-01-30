@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import { sankey as d3Sankey, sankeyLinkHorizontal } from 'd3-sankey';
-import { mockLogs as logs } from '../data/apiData';
 
-const D3SankeyDiagram = () => {
+const D3SankeyDiagram = ({ networkFlow, logs }) => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
+  const input = networkFlow ?? logs ?? [];
   // Helper functions
   const getDeviceType = (log) => {
     if (log.type === 'iam_change') return 'admin-console';
@@ -22,6 +22,45 @@ const D3SankeyDiagram = () => {
     return 'network-logs';
   };
   const data = useMemo(() => {
+    // If API already returns sankey-ready data, use it directly.
+    const sankey =
+      input?.sankeyData ??
+      input?.data?.sankeyData ??
+      (input?.nodes && input?.links ? input : null) ??
+      (input?.data?.nodes && input?.data?.links ? input.data : null);
+
+    if (sankey?.nodes && sankey?.links) {
+      const nodes = (sankey.nodes || []).map((n, idx) => {
+        const category = n?.category ?? n?.layer ?? 'source';
+        const name = n?.name ?? String(n?.id ?? idx);
+        return {
+          ...n,
+          id: n?.id ?? idx,
+          name,
+          category,
+          displayName: name.length > 15 ? name.substring(0, 12) + '...' : name,
+        };
+      });
+
+      const links = (sankey.links || []).map((l) => ({
+        ...l,
+        source: l?.source?.id ?? l?.source,
+        target: l?.target?.id ?? l?.target,
+        value: Number(l?.value ?? l?.count ?? 1),
+      }));
+
+      const categories = {
+        source: nodes.filter((n) => n.category === 'source'),
+        device: nodes.filter((n) => n.category === 'device'),
+        telemetry: nodes.filter((n) => n.category === 'telemetry'),
+      };
+
+      return { nodes, links, categories };
+    }
+
+    // Otherwise, treat input as logs array and derive sankey flows.
+    const logsArray = Array.isArray(input) ? input : [];
+
     // Prepare Sankey data structure
     const nodes = [];
     const links = [];
@@ -56,7 +95,7 @@ const D3SankeyDiagram = () => {
     
     // Process logs - take top IPs only to avoid clutter
     const ipCounts = new Map();
-    logs.forEach(log => {
+    logsArray.forEach(log => {
       const ip = log.sourceIp || 'unknown';
       ipCounts.set(ip, (ipCounts.get(ip) || 0) + 1);
     });
@@ -67,7 +106,7 @@ const D3SankeyDiagram = () => {
       .slice(0, 10)
       .map(([ip]) => ip);
     
-    logs.forEach(log => {
+    logsArray.forEach(log => {
       const sourceIP = log.sourceIp || 'unknown';
       
       // Only process top IPs
@@ -97,7 +136,7 @@ const D3SankeyDiagram = () => {
     });
     
     return { nodes, links, categories };
-  }, [logs]);
+  }, [input]);
 
   useEffect(() => {
     if (!svgRef.current || !containerRef.current || data.nodes.length === 0) return;

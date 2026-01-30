@@ -2,21 +2,21 @@ import React, { useMemo } from 'react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Shield, TrendingUp, TrendingDown } from 'lucide-react';
 
-const SecurityPostureRadar = ({ securityPosture }) => {
+const SecurityPostureRadar = ({ securityPosture = {} }) => {
   // Map categories to radar chart data
   const data = useMemo(() => {
-    const categories = securityPosture.categories;
+    const categories = securityPosture?.categories ?? {};
     return [
-      { metric: 'Authentication', score: categories.authentication, fullMark: 100 },
-      { metric: 'Access Control', score: categories.accessControl, fullMark: 100 },
-      { metric: 'Threat Detection', score: categories.threatDetection, fullMark: 100 },
-      { metric: 'Incident Response', score: categories.incidentResponse, fullMark: 100 },
-      { metric: 'Network Security', score: categories.networkSecurity, fullMark: 100 },
-      { metric: 'Compliance', score: categories.compliance, fullMark: 100 },
+      { metric: 'Authentication', score: Number(categories.authentication ?? 0), fullMark: 100 },
+      { metric: 'Access Control', score: Number(categories.accessControl ?? 0), fullMark: 100 },
+      { metric: 'Threat Detection', score: Number(categories.threatDetection ?? 0), fullMark: 100 },
+      { metric: 'Incident Response', score: Number(categories.incidentResponse ?? 0), fullMark: 100 },
+      { metric: 'Network Security', score: Number(categories.networkSecurity ?? 0), fullMark: 100 },
+      { metric: 'Compliance', score: Number(categories.compliance ?? 0), fullMark: 100 },
     ];
   }, [securityPosture]);
 
-  const averageScore = useMemo(() => securityPosture.overallScore, [securityPosture]);
+  const averageScore = useMemo(() => Number(securityPosture?.overallScore ?? 0), [securityPosture]);
 
   const getScoreColor = (score) => {
     if (score >= 80) return 'text-green-500';

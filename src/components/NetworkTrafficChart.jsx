@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const NetworkTrafficChart = ({ logs }) => {
+const NetworkTrafficChart = ({ logs = { timeline: [] } }) => {
    const data = useMemo(() => {
-  return logs.timeline.map(item => {
+  const timeline = Array.isArray(logs?.timeline) ? logs.timeline : [];
+  return timeline.map(item => {
     const hour = new Date(item.timestamp).getHours();
     return {
       hour: `${String(hour).padStart(2, '0')}:00`,
@@ -36,7 +37,7 @@ const NetworkTrafficChart = ({ logs }) => {
     return null;
   };
 
-  const maxValue = Math.max(...data.map(d => d.total));
+  const maxValue = data.length ? Math.max(...data.map(d => d.total)) : 0;
 
   return (
     <div className="w-full">
