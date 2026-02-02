@@ -7,7 +7,7 @@ import { generateMockLogs, detectAnomalies } from "../data/mockData";
 import StatCard from "./StatCard";
 import ThreatPieChart from "./ThreatPieChart";
 
-function Dashboard({ toggleDashboard, isAdvanced }) {
+function Dashboard({ toggleDashboard, isAdvanced, data = {} }) {
   const [logs, setLogs] = useState([]);
   const [anomalies, setAnomalies] = useState([]);
   const [iamChanges, setIamChanges] = useState([]);
@@ -127,28 +127,28 @@ function Dashboard({ toggleDashboard, isAdvanced }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Active Threats"
-          value={stats.activeThreats}
+          value={data?.stats?.activeThreats}
           icon={<AlertTriangle className="w-6 h-6" />}
           color="red"
           trend={stats.activeThreats > 0 ? "up" : "down"}
         />
         <StatCard
           title="Failed Logins (24h)"
-          value={stats.failedLogins}
+          value={data?.stats?.failedLogins}
           icon={<Users className="w-6 h-6" />}
           color="yellow"
           trend="up"
         />
         <StatCard
           title="IAM Changes (24h)"
-          value={stats.iamChanges}
+          value={data?.stats?.iamChanges}
           icon={<Shield className="w-6 h-6" />}
           color="blue"
           trend="neutral"
         />
         <StatCard
           title="Suspicious IPs"
-          value={stats.suspiciousIps}
+          value={data?.stats?.suspiciousIps}
           icon={<Globe className="w-6 h-6" />}
           color="orange"
           trend="up"

@@ -26,12 +26,13 @@ import { generateMockLogs, detectAnomalies } from "../data/mockData";
 import StatCard from "./StatCard";
 import D3SankeyDiagram from "./D3SankeyDiagram";
 import FurySankey from "./FurySankey";
-import { data } from "../data/apiData";
+// import { data } from "../data/apiData";
+
 import NotificationBell from "./NotificationBell";
 import NotificationTray from "./NotificaitonTray";
 import AIChatAgentWithData from "./AIChatAgentWithData";
 
-function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
+function AdvancedDashboard({ toggleDashboard, isAdvanced, data = {} }) {
   const [trayOpen, setTrayOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   //   const [logs, setLogs] = useState([]);
@@ -41,20 +42,26 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("24h");
   const [severityFilter, setSeverityFilter] = useState("all");
-  console.log(data.logs, "data");
+  console.log(data?.logs, "data");
   const {
-    logs,
-    anomalies,
-    iamChanges,
-    threatDistribution,
-    topAttackSources,
-    securityPosture,
-    networkTraffic,
-    attackPatternHeatmap,
-    networkFlow,
-    stats,
-    securityEventsTimeline
-  } = data;
+    logs = [],
+    anomalies = [],
+    iamChanges = [],
+    threatDistribution = {},
+    topAttackSources = [],
+    securityPosture = {},
+    networkTraffic = {},
+    attackPatternHeatmap = {},
+    networkFlow = [],
+    stats = {
+      criticalThreats: 0,
+      failedLogins: 0,
+      iamChanges: 0,
+      attackSources: 0,
+      eventsPerHour: 0,
+    },
+    securityEventsTimeline = [],
+  } = data ?? {};
 
   useEffect(() => {
     setTimeout(() => {
@@ -258,21 +265,28 @@ function AdvancedDashboard({ toggleDashboard, isAdvanced }) {
       <div className="p-6">
         {/* KPI Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <StatCard
+            title="Total Threads"
+            value={stats.totalEvents}
+            icon={<AlertTriangle className="w-6 h-6" />}
+            color="blue"
+            trend={stats.totalEvents > 1000 ? "up" : "down"}
+          />
           <StatCard
             title="Critical Threats"
-            value={stats.criticalThreats}
+            value={data?.stats?.criticalThreats}
             icon={<AlertTriangle className="w-6 h-6" />}
             color="red"
-            trend={stats.criticalThreats > 1000 ? "up" : "down"}
+            trend={data?.stats?.criticalThreats > 1000 ? "up" : "down"}
           />
 
-          <StatCard
-            title="Failed Logins"
-            value={stats.failedLogins}
+          {/* <StatCard
+            title="Failed Logins" 
+            value={data?.stats?.failedLogins}
             icon={<Users className="w-6 h-6" />}
             color="yellow"
             trend={stats.failedLogins > 100 ? "up" : "down"}
-          />
+          /> */}
 
           <StatCard
             title="IAM Changes"
